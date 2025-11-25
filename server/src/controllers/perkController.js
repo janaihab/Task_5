@@ -128,7 +128,27 @@ export async function updatePerk(req, res, next) {
     res.json({ perk: doc });
   } catch (err) { next(err); }
 }
-// TODO 1: Implement delete a perk by ID
+// Delete a perk by ID
 export async function deletePerk(req, res, next) {
- 
+  try {
+    // Find the perk first to check if it exists
+    const perk = await Perk.findById(req.params.id);
+    if (!perk) return res.status(404).json({ message: 'Perk not found' });
+
+    // Check if the user is the creator of the perk (authorization check)
+    // Convert both to strings for comparison to handle ObjectId vs string comparison
+    const perkCreatorId = perk.createdBy.toString();
+    const userId = req.user.id.toString();
+    
+    if (perkCreatorId !== userId) {
+      console.log(`Authorization failed: perk creator ${perkCreatorId} !== user ${userId}`);
+      return res.status(403).json({ message: 'Not authorized to delete this perk' });
+    }
+
+    // Delete the perk
+    const doc = await Perk.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Perk deleted successfully', perk: doc });
+  } catch (err) {
+    next(err);
+  }
 }
